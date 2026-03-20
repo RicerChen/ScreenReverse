@@ -182,6 +182,10 @@ export default function ConfigPanel({ onConfigChange }: ConfigPanelProps) {
                     <option value="glm-4-flash">glm-4-flash（推荐，速度快）</option>
                     <option value="glm-4">glm-4</option>
                     <option value="glm-4-plus">glm-4-plus</option>
+                    <option value="glm-4.7-allTools">glm-4.7-allTools（最新，工具调用）</option>
+                    <option value="glm-4.7-flash">glm-4.7-flash（最新，速度快）</option>
+                    <option value="glm-4.7">glm-4.7（最新）</option>
+                    <option value="glm-4.7-plus">glm-4.7-plus（最新 Plus）</option>
                   </select>
                 </div>
               )}

@@ -31,8 +31,8 @@ export const PROVIDERS: ProviderInfo[] = [
   {
     id: "zhipu",
     name: "智谱 AI",
-    description: "智谱 AI GLM-4 系列模型",
-    defaultModel: "glm-4-flash",
+    description: "智谱 AI GLM-4.7 / GLM-5 系列模型",
+    defaultModel: "glm-4.7-flash",
     requiresApiKey: true,
     available: true,
   },

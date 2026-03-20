@@ -52,7 +52,7 @@
    ```env
    # 智谱 AI
    ZHIPU_API_KEY=your_zhipu_api_key_here
-   ZHIPU_MODEL=glm-4
+   ZHIPU_MODEL=glm-4.7-flash
 
    # 应用配置
    PORT=3000
@@ -165,7 +165,7 @@ CMD ["npm", "start"]
 | 变量名 | 说明 | 默认值 |
 |--------|------|--------|
 | `ZHIPU_API_KEY` | 智谱 AI API 密钥（必填） | - |
-| `ZHIPU_MODEL` | 智谱模型名称 | `glm-4` |
+| `ZHIPU_MODEL` | 智谱模型名称 | `glm-4.7-flash` |
 | `PORT` | 应用端口 | `3000` |
 | `PLAYWRIGHT_HEADLESS` | 是否无头模式运行浏览器 | `true` |
 | `PLAYWRIGHT_TIMEOUT` | 页面加载超时（毫秒） | `30000` |
