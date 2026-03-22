@@ -38,6 +38,20 @@ export class PlaywrightCapture {
       userAgent:
         "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
       locale: "zh-CN",
+      // 避免被识别为机器人
+      extraHTTPHeaders: {
+        "Accept-Language": "zh-CN,zh;q=0.9",
+        "sec-ch-ua": '"Not_A Brand";v="8", "Chromium";v="120", "Google Chrome";v="120"',
+        "sec-ch-ua-mobile": "?0",
+        "sec-ch-ua-platform": '"macOS"',
+      },
+    });
+
+    // 屏蔽 navigator.webdriver
+    await this.context.addInitScript(() => {
+      Object.defineProperty(navigator, "webdriver", {
+        get: () => undefined,
+      });
     });
   }
 
@@ -63,6 +77,9 @@ export class PlaywrightCapture {
         waitUntil: "networkidle",
         timeout: parseInt(process.env.PLAYWRIGHT_TIMEOUT || "30000"),
       });
+
+      // 处理特定平台
+      await this.handleSpecialPlatforms(page, url);
 
       // 获取页面标题
       const title = await page.title();
@@ -97,6 +114,43 @@ export class PlaywrightCapture {
       throw error;
     } finally {
       await page.close();
+    }
+  }
+
+  /**
+   * 处理特定平台的特殊逻辑
+   */
+  private async handleSpecialPlatforms(page: Page, url: string): Promise<void> {
+    if (url.includes("xiaohongshu.com") || url.includes("xhslink.com")) {
+      console.log("[Playwright] Handling Xiaohongshu specific logic...");
+      try {
+        // 等待内容加载（支持多个可能的选择器）
+        await Promise.race([
+          page.waitForSelector(".note-content", { timeout: 10000 }),
+          page.waitForSelector(".desc", { timeout: 10000 }),
+          page.waitForSelector(".content", { timeout: 10000 }),
+          page.waitForSelector(".title", { timeout: 10000 }),
+        ]);
+
+        // 尝试关闭登录弹窗（如果存在）
+        const loginCloseBtn = await page.$(".close-icon, .close-btn, .login-close-btn");
+        if (loginCloseBtn) {
+          await loginCloseBtn.click();
+          console.log("[Playwright] Closed login modal");
+        }
+
+        // 展开“查看更多”或长文内容
+        const readMoreBtn = await page.$(".read-more, .show-more");
+        if (readMoreBtn) {
+          await readMoreBtn.click();
+          console.log("[Playwright] Clicked 'read more' button");
+          await page.waitForTimeout(1000); // 等待内容展开
+        }
+      } catch (e) {
+        console.log(
+          "[Playwright] Xiaohongshu specific selector not found, proceeding anyway..."
+        );
+      }
     }
   }
 
@@ -147,9 +201,50 @@ export class PlaywrightCapture {
         document.querySelectorAll(selector).forEach((el) => el.remove());
       });
 
-      // 获取主要内容
-      const bodyText = document.body?.innerText || "";
-      return bodyText;
+      // 提取主要内容（针对内容平台优化）
+      const contentSelectors = [
+        ".note-content", // 小红书
+        ".desc",         // 小红书
+        ".content",      // 常用
+        ".title",        // 常用
+        "article",       // 通用文章
+        ".post-content", // 博客
+        ".rich_media_content", // 微信公众号
+      ];
+
+      let mainTextParts: string[] = [];
+
+      // 尝试提取标题
+      const titleSelectors = ["h1", ".title", ".note-title"];
+      for (const selector of titleSelectors) {
+        const el = document.querySelector(selector);
+        if (el && el.textContent?.trim()) {
+          mainTextParts.push(el.textContent.trim());
+          break;
+        }
+      }
+
+      // 尝试提取正文内容
+      let contentFound = false;
+      for (const selector of contentSelectors) {
+        const elements = document.querySelectorAll(selector);
+        if (elements.length > 0) {
+          elements.forEach((el) => {
+            if (el.textContent?.trim()) {
+              mainTextParts.push(el.textContent.trim());
+              contentFound = true;
+            }
+          });
+          if (contentFound) break;
+        }
+      }
+
+      // 如果没找到特定选择器的内容，退回到 body 文本
+      if (mainTextParts.length === 0) {
+        return document.body?.innerText || "";
+      }
+
+      return mainTextParts.join("\n\n");
     });
 
     // 清洗文本
@@ -165,17 +260,8 @@ export class PlaywrightCapture {
         // 移除完全空行
         .split("\n")
         .filter((line) => line.trim().length > 0)
-        // 合并过短的行
-        .reduce((lines: string[], line: string) => {
-          const trimmedLine = line.trim();
-          if (trimmedLine.length < 5 && lines.length > 0) {
-            // 合并到上一行
-            lines[lines.length - 1] += trimmedLine;
-          } else {
-            lines.push(trimmedLine);
-          }
-          return lines;
-        }, [])
+        // 去除每行首尾空格
+        .map((line) => line.trim())
         .join("\n")
     );
   }

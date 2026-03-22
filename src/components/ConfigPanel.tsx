@@ -14,6 +14,7 @@ export default function ConfigPanel({ onConfigChange }: ConfigPanelProps) {
   const [apiKey, setApiKey] = useState("");
   const [model, setModel] = useState("");
   const [isSaved, setIsSaved] = useState(false);
+  const [hasConfig, setHasConfig] = useState(false);
 
   // 加载保存的配置
   useEffect(() => {
@@ -22,6 +23,7 @@ export default function ConfigPanel({ onConfigChange }: ConfigPanelProps) {
       setSelectedProvider(config.provider);
       setApiKey(config.apiKey);
       setModel(config.model || "");
+      setHasConfig(config.apiKey !== "");
     }
   }, []);
 
@@ -40,6 +42,7 @@ export default function ConfigPanel({ onConfigChange }: ConfigPanelProps) {
 
     ConfigStorage.saveConfig(config);
     setIsSaved(true);
+    setHasConfig(true);
     setTimeout(() => setIsSaved(false), 2000);
 
     // 通知父组件配置已更改
@@ -54,6 +57,7 @@ export default function ConfigPanel({ onConfigChange }: ConfigPanelProps) {
     setModel("");
     ConfigStorage.clearConfig();
     setIsSaved(true);
+    setHasConfig(false);
     setTimeout(() => setIsSaved(false), 2000);
 
     // 通知父组件配置已清除
@@ -63,7 +67,6 @@ export default function ConfigPanel({ onConfigChange }: ConfigPanelProps) {
   };
 
   const currentProvider = getCurrentProvider();
-  const hasConfig = ConfigStorage.isConfigured();
 
   return (
     <>
